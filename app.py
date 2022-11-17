@@ -158,14 +158,6 @@ def email_api_key(email, api_key):
     """Email the user their api key via SES by sending them the one time link"""
     ses_client = boto3.client('ses')
     api_key_link = gen_one_time_link(api_key)
-    message = f"""Thanks for subscribing! \n \n You can now use your API key to access the single address api. Please use the following link to access your api key: {api_key_link} \n 
-                    Note that this link will only work once. \n \n \n
-                    You can view the documentation for the single address api at either of these links: \n
-                    https://ryzgpp5ynf.us-east-2.awsapprunner.com/docs \n
-                    https://api.abut.ai/docs \n \n
-                    To view your billing information. please visit https://billing.stripe.com/p/login/4gw29n6l45sK8sU7ss . If you need to access your api key again or have any questions, please email us at support@abut.ai 
-                    """
-    message=message.split("\n").join("<br />")
     response = ses_client.send_email(
         Source='support@abut.ai',
         Destination={
@@ -177,11 +169,25 @@ def email_api_key(email, api_key):
             'Body': {
                 'Html': {
                     'Charset': 'UTF-8',
-                    'Data': message
+                    'Data': f"""Thanks for subscribing! <br /> <br /> You can now use your API key to access the single address api. Please use the following link to access your api key: {api_key_link} <br /> 
+                    Note that this link will only work once. <br /> <br /> 
+                    You can view the documentation for the single address api at either of these links: <br />
+                    https://ryzgpp5ynf.us-east-2.awsapprunner.com/docs <br />
+                    https://api.abut.ai/docs <br /> <br />
+                    To view your billing information. please visit https://billing.stripe.com/p/login/4gw29n6l45sK8sU7ss . If you need to access your api key again or have any questions, please email us at support@abut.ai  <br /> <br />
+                    Thanks, <br />
+                    The Abut.ai Team
+                    """
                 },
                 'Text': {
                     'Charset': 'UTF-8',
-                    'Data': message
+                    'Data': f"""Thanks for subscribing! <br /> <br /> You can now use your API key to access the single address api. Please use the following link to access your api key: {api_key_link} <br /> 
+                    Note that this link will only work once. <br /> <br /> <br />
+                    You can view the documentation for the single address api at either of these links: <br />
+                    https://ryzgpp5ynf.us-east-2.awsapprunner.com/docs <br />
+                    https://api.abut.ai/docs <br /> <br />
+                    To view your billing information. please visit https://billing.stripe.com/p/login/4gw29n6l45sK8sU7ss . If you need to access your api key again or have any questions, please email us at support@abut.ai 
+                    """
                 },
             },
             'Subject': {
