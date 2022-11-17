@@ -170,9 +170,8 @@ def email_api_key(email, api_key):
                 'Html': {
                     'Charset': 'UTF-8',
                     'Data': f"""Thanks for subscribing! <br /> <br /> You can now use your API key to access the single address api. Please use the following link to access your api key: {api_key_link} <br /> 
-                    Note that this link will only work once. <br /> <br /> 
-                    You can view the documentation for the single address api at either of these links: <br />
-                    https://ryzgpp5ynf.us-east-2.awsapprunner.com/docs <br />
+                    Note that this link will only work once, so save this key somewhere safe! <br /> <br /> 
+                    You can view the documentation and test single address api with your new api key here: <br />
                     https://api.abut.ai/docs <br /> <br />
                     To view your billing information. please visit https://billing.stripe.com/p/login/4gw29n6l45sK8sU7ss . If you need to access your api key again or have any questions, please email us at support@abut.ai  <br /> <br />
                     Thanks, <br />
@@ -182,11 +181,12 @@ def email_api_key(email, api_key):
                 'Text': {
                     'Charset': 'UTF-8',
                     'Data': f"""Thanks for subscribing! <br /> <br /> You can now use your API key to access the single address api. Please use the following link to access your api key: {api_key_link} <br /> 
-                    Note that this link will only work once. <br /> <br /> <br />
-                    You can view the documentation for the single address api at either of these links: <br />
-                    https://ryzgpp5ynf.us-east-2.awsapprunner.com/docs <br />
+                    Note that this link will only work once, so save this key somewhere safe! <br /> <br /> 
+                    You can view the documentation and test single address api with your new api key here: <br />
                     https://api.abut.ai/docs <br /> <br />
-                    To view your billing information. please visit https://billing.stripe.com/p/login/4gw29n6l45sK8sU7ss . If you need to access your api key again or have any questions, please email us at support@abut.ai 
+                    To view your billing information. please visit https://billing.stripe.com/p/login/4gw29n6l45sK8sU7ss . If you need to access your api key again or have any questions, please email us at support@abut.ai  <br /> <br />
+                    Thanks, <br />
+                    The Abut.ai Team
                     """
                 },
             },
