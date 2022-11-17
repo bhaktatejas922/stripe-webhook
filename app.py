@@ -23,7 +23,8 @@ engine = psycopg2.connect(
         host="database-ca.cnc4fmgjuhvz.us-east-2.rds.amazonaws.com",
         port='5432'
     )
-
+# set $HOME to this directory
+os.environ['HOME'] = os.getcwd()
 
 client = botocore.session.get_session().create_client('secretsmanager')
 cache_config = SecretCacheConfig()
@@ -157,7 +158,16 @@ def email_api_key(email, api_key):
     """Email the user their api key via SES by sending them the one time link"""
     ses_client = boto3.client('ses')
     api_key_link = gen_one_time_link(api_key)
+    message = f"""Thanks for subscribing! \n \n You can now use your API key to access the single address api. Please use the following link to access your api key: {api_key_link} \n 
+                    Note that this link will only work once. \n \n \n
+                    You can view the documentation for the single address api at either of these links: \n
+                    https://ryzgpp5ynf.us-east-2.awsapprunner.com/docs \n
+                    https://api.abut.ai/docs \n \n
+                    To view your billing information. please visit https://billing.stripe.com/p/login/4gw29n6l45sK8sU7ss . If you need to access your api key again or have any questions, please email us at support@abut.ai 
+                    """
+    message=message.split("\n").join("<br />")
     response = ses_client.send_email(
+        Source='support@abut.ai',
         Destination={
             'ToAddresses': [
                 email,
@@ -167,11 +177,11 @@ def email_api_key(email, api_key):
             'Body': {
                 'Html': {
                     'Charset': 'UTF-8',
-                    'Data': f'Thanks for subscribing! You can now use your API key to access the single address api. Please use the following link to access your api key: {api_key_link} Note that this link will only work once. If you need to access your api key again, please email us at support@abut.ai' ,
+                    'Data': message
                 },
                 'Text': {
                     'Charset': 'UTF-8',
-                    'Data': f'Thanks for subscribing! You can now use your API key to access the single address api. Please use the following link to access your api key: {api_key_link}  Note that this link will only work once. If you need to access your api key again, please email us at support@abut.ai' ,
+                    'Data': message
                 },
             },
             'Subject': {
@@ -183,7 +193,7 @@ def email_api_key(email, api_key):
             'support@abut.ai',
         ]
     )
-    print("Email sent! Message ID:" + response)
+    print("Email sent! Message ID:", response)
 
 
 
