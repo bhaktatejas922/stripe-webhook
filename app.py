@@ -84,7 +84,12 @@ def lambda_handler(event, _context):
 
         json_format = json.loads(json_payload)
         detail_type = json_format.get('type', 'stripe-webhook-lambda')
-        add_paid_user_to_db(json_format)
+        print(f'Webhook received: {json_format}')
+        if json_format['data']['object']['object'] == 'checkout.session': # we dont need to check for success because we only have webhook on successs
+            add_user_to_db(json_format)
+
+        elif json_format['data']['object']['object'] == 'payment_intent': # we dont need to check for success because we only have webhook on successs
+            add_paid_user_to_db(json_format)
         response = forward_event(json_payload, detail_type)
 
         if response['FailedEntryCount'] > 0:
@@ -103,14 +108,23 @@ def lambda_handler(event, _context):
                     f'Unexpected error: {err}, {type(err)}', headers)
         return {'statusCode': 500, 'body': 'Internal Server Error'}
 
+def add_user_to_db(json_format):
+    """Add unpaid user to checkout_users db"""
+    cursor = engine.cursor()
+    email = json_format['data']['object']['customer_details']['email']
+    api_key = get_api_key(email)
+    query = f"INSERT INTO checkout_users (email, customer_id, plan, api_key) VALUES ('{email}', '{json_format['data']['object']['customer']}', '{json_format['data']['object']['payment_link']}', '{api_key}')"
+    cursor.execute(query)
+    engine.commit()
+    cursor.close()
 
 def add_paid_user_to_db(json_format):
-    """Add paid user to db when payment is successful. need to parse event and get email, customer_id, plan, risk_score, charge_id"""
+    """Add paid user to db every time when payment is successful. need to parse event and get email, customer_id, plan, risk_score, charge_id"""
     charge_id = json_format['data']['object']['charges']['data'][0]['id']
     amount = json_format['data']['object']['charges']['data'][0]['amount']
     email = json_format['data']['object']['charges']['data'][0]['billing_details']['email']
     customer_id = json_format['data']['object']['charges']['data'][0]['customer']
-    risk_score = json_format['data']['object']['charges']['data'][0]['outcome']['risk_score']
+    risk_score = json_format['data']['object']['charges']['data'][0]['outcome']['risk_score'] if 'risk_score' in json_format['data']['object']['charges']['data'][0]['outcome'] else -1
     plans = read_plans('single_address_api') # will look like {'hobby': 3000, 'business': 5000, 'enterprise': 10000}
     for plan, price in plans.items():
         if amount <= price*1.3: # account for taxes
@@ -125,19 +139,29 @@ def add_paid_user_to_db(json_format):
 
         
 def get_api_key(email):
-    """Get most recent api key from db for a user. Check the created_at column for the most recent key. Note that its possible that this email does not exist yet.
-    If it does not exist, then we need to create a new user in the db generate them a new api key and return that key
+    """Get most recent api key from db for a user. Check the created_at column for the most recent key. Note that its possible that this email does not exist yet in paid_users.
+    If it does not exist, then we need to create a new user in the db and get their original key from checkout flow 
     """
     cursor = engine.cursor()
     query = f"SELECT api_key FROM paid_users WHERE email='{email}' ORDER BY created_at DESC LIMIT 1"
     cursor.execute(query)
-    api_key = cursor.fetchone()
-    if api_key is None: # if user does not have a most recent api_key, then we need to create a new user and generate them a new api key
-        api_key = generate_api_key(email)
-        # email the user their api key via SES
-        email_api_key(email, api_key)
+    paid_api_key = cursor.fetchone()
+    if paid_api_key is None: # if user does not have a most recent paid api_key, then we need to get the key from their trial in checkout_users
+        # attempt to fetch user from checkout_users table to see if they got a key from a trial
+        query = f"SELECT api_key FROM checkout_users WHERE email='{email}' ORDER BY created_at DESC LIMIT 1"
+        cursor.execute(query)
+        trial_api_key = cursor.fetchone()
+        if trial_api_key is None: 
+            # if user does not have a most recent api_key, then we need to create a new user and generate new api key and 
+            # email the user their api key via SES
+            api_key = generate_api_key(email)
+            email_api_key(email, api_key)
+        else:
+            # return the found trial key. might want to throw error here if we want to force users to pay after trial TODO
+            api_key = trial_api_key[0]
     else:
-        api_key = api_key[0]
+        # return the last found paid key
+        api_key = paid_api_key[0]
     return api_key
 
 def generate_api_key(email):
